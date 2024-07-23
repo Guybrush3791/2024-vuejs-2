@@ -1,6 +1,7 @@
 <template>
-  <h1>Books:</h1>
-  <div v-if="!creating">
+  <!-- READ ALL -->
+  <div v-if="!creating && !editing">
+    <h1>Books:</h1>
     <button @click="toggleCreate">CREATE NEW BOOK</button>
     <ul>
       <li v-for="book in booksData" :key="book.id">
@@ -13,10 +14,13 @@
           </li>
         </ul>
         <button @click="deleteBook(book.id)">CANCEL</button>
+        <button @click="editBook(book.id)">EDIT</button>
       </li>
     </ul>
   </div>
-  <div v-else>
+  <!-- CREATE NEW BOOK -->
+  <div v-if="creating">
+    <h1>New Book</h1>
     <label>Title</label>
     <br />
     <input type="text" v-model="bookCreatingData.title" />
@@ -46,6 +50,38 @@
     <button @click="toggleCreate">CANCEL</button>
     <button @click="createBook">SAVE</button>
   </div>
+  <!-- EDIT BOOK -->
+  <div v-if="editing">
+    <h1>Edit Books</h1>
+    <label>Title</label>
+    <br />
+    <input type="text" v-model="bookEditingData.title" />
+    <br />
+    <br />
+    <label>Author</label>
+    <br />
+    <select v-model="bookEditingData.authorId">
+      <option v-for="author in authorsData" :key="author.id" :value="author.id">
+        {{ author.name }} {{ author.surname }}
+      </option>
+    </select>
+    <br />
+    <br />
+    <label>Bookshelfs</label>
+    <br />
+    <div v-for="bookshelf in bookshelfsData" :key="bookshelf.id">
+      <input
+        type="checkbox"
+        :id="'bs-' + bookshelf.id"
+        :value="bookshelf.id"
+        v-model="bookEditingData.bookshelfIds"
+      />
+      <label :for="'bs-' + bookshelf.id"> {{ bookshelf.name }} in {{ bookshelf.address }} </label>
+    </div>
+    <br /><br />
+    <button @click="toggleEdit">CANCEL</button>
+    <button @click="updateBook">UPDATE</button>
+  </div>
 </template>
 
 <script setup>
@@ -62,7 +98,14 @@ const bookCreatingData = ref({
   authorId: '',
   bookshelfIds: []
 })
+const bookEditingData = ref({
+  title: '',
+  authorId: '',
+  bookshelfIds: []
+})
+
 const creating = ref(false)
+const editing = ref(false)
 
 const toggleCreate = () => {
   creating.value = !creating.value
@@ -72,6 +115,9 @@ const toggleCreate = () => {
     authorId: '',
     bookshelfIds: []
   }
+}
+const toggleEdit = () => {
+  editing.value = !editing.value
 }
 
 const createBook = () => {
@@ -83,6 +129,35 @@ const createBook = () => {
       const data = res.data
       booksData.value.push(data)
       toggleCreate()
+    })
+    .catch((err) => console.error('Error: ' + err))
+}
+const editBook = (id) => {
+  for (let bData of booksData.value) {
+    if (bData.id === id) {
+      const bookshelfIds = []
+      for (let bs of bData.bookshelfs) {
+        bookshelfIds.push(bs.id)
+      }
+
+      bookEditingData.value = {
+        id: bData.id,
+        title: bData.title,
+        authorId: bData.author.id,
+        bookshelfIds: bookshelfIds
+      }
+      break
+    }
+  }
+
+  editing.value = true
+}
+const updateBook = () => {
+  axios
+    .patch('http://localhost:8080/api/v1/books/' + bookEditingData.value.id, bookEditingData.value)
+    .then((res) => {
+      updateData()
+      toggleEdit()
     })
     .catch((err) => console.error('Error: ' + err))
 }
