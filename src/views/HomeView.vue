@@ -13,7 +13,7 @@
             {{ bookshelf.name }} located in {{ bookshelf.address }}
           </li>
         </ul>
-        <button @click="deleteBook(book.id)">CANCEL</button>
+        <button @click="deleteBook(book.id)">DELETE</button>
         <button @click="editBook(book.id)">EDIT</button>
       </li>
     </ul>
@@ -156,7 +156,15 @@ const updateBook = () => {
   axios
     .patch('http://localhost:8080/api/v1/books/' + bookEditingData.value.id, bookEditingData.value)
     .then((res) => {
-      updateData()
+      const data = res.data
+
+      for (let i = 0; i < booksData.value.length; i++) {
+        if (booksData.value[i].id === data.id) {
+          booksData.value[i] = data
+          break
+        }
+      }
+
       toggleEdit()
     })
     .catch((err) => console.error('Error: ' + err))
